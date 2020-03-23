@@ -1,0 +1,16 @@
+.select-city-label {
+    font-weight: bold;
+    margin-bottom: 1rem;
+}
+
+.ticker-text {
+    color: gray;
+}
+
+.app-row {
+    margin-bottom: 2rem;
+}
+
+.plot {
+    height: 60rem;
+}

@@ -1,0 +1,7 @@
+version: '3'
+services:
+    dashboard:
+      image: train/dashboard
+      build:
+        context: ./
+        dockerfile: deploy/dashboard.dockerfile

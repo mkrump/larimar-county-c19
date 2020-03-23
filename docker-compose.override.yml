@@ -1,0 +1,15 @@
+version: '3'
+services:
+    dashboard:
+      ports:
+        - "5000:5000"
+      volumes:
+        - .:/app
+      environment:
+        FRA_DOT_GOV_CERT_PATH: "${FRA_DOT_GOV_CERT_PATH}"
+        CACHE_DIR: "${CACHE_DIR}"
+        DEBUG: "${DEBUG}"
+        HOST: "${HOST}"
+        PORT: "${PORT}"
+        FLASK_ENV: development
+      command: python app.py

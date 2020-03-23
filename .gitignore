@@ -1,0 +1,34 @@
+### Python template
+# Byte-compiled / optimized / DLL files
+__pycache__/
+
+
+# Unit test / coverage reports
+.cache
+.pytest_cache/
+
+
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# file specific pem
+# fra-dot-gov-chain.pem
+
+#IDEA
+.idea
+
+#cache
+cache/
