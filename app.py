@@ -28,6 +28,7 @@ cache.init_app(
         "CACHE_DEFAULT_TIMEOUT": server.config["CACHE_DEFAULT_TIMEOUT"],
     }
 )
+cache.clear()
 
 MARKDOWN = '''
 #### 
@@ -51,7 +52,6 @@ app.layout = html.Div(
                 dcc.Markdown(MARKDOWN)
             ],
         ),
-        # TODO fix size of text on mobile?
         html.Div(
             className="row app-row",
             children=[
@@ -71,7 +71,7 @@ app.layout = html.Div(
 )
 
 
-@cache.memoize()
+@cache.cached()
 def update_metrics():
     r = requests.get(
         "https://www.larimer.org/health/communicable-disease/coronavirus-covid-19/larimer-county-positive-covid-19-numbers"
@@ -90,9 +90,8 @@ def update_metrics():
     columns = data[0]
     cols = [c.lower().replace(" ", '_') for c in columns]
     data = pd.DataFrame(data[1:], columns=cols)
-    # if True:
-    #     data = pd.read_csv("./data.csv")
-    #     last_update = pd.to_datetime("2020-03-22T10:00:00")
+    now = datetime.now().isoformat()
+    logging.info("update_metrics {0}".format(now))
     data.reported_date = pd.to_datetime(data.reported_date)
     return data, last_update.isoformat()
 
@@ -124,6 +123,7 @@ def update_dropdown(children):
         Input('ticker-text', "children")
     ]
 )
+@cache.memoize()
 def update_figure(cities, _):
     figures = []
     now = datetime.now().isoformat()
@@ -157,6 +157,7 @@ def update_figure(cities, _):
     figures.append(dcc.Graph(id="gender", figure=fig, className="plot"))
     return figures
 
+
 def top(df):
     fig = go.Figure({
         "data": [
@@ -167,7 +168,7 @@ def top(df):
         ],
         "layout": {
             "title": {"text": f"<b>Total Confirmed COVID-19 Cases by City</b>"},
-            "xaxis": {"automargin": True, "title": "Date Reported"},
+            "xaxis": {"automargin": True, "title": None},
             "yaxis": {
                 "automargin": True,
                 "title": {"text": "Count"}
@@ -192,7 +193,7 @@ def by_day_by_city_scatter(df, layout_overrides=None):
     x = x.sort_values(['city', 'reported_date'])
     layout = {
         "title": {"text": f"<b>Total Confirmed COVID-19 Cases by Day</b>"},
-        "xaxis": {"automargin": True},
+        "xaxis": {"automargin": True, "title": None},
         "yaxis": {
             "automargin": True,
             "title": {"text": "Count"}
@@ -202,6 +203,7 @@ def by_day_by_city_scatter(df, layout_overrides=None):
         layout.update(layout_overrides)
     fig = px.scatter(x, x="reported_date", y="counts", color="city")
     fig.update_layout(layout)
+    fig.update_layout(legend_title='<b> City </b>', showlegend=True)
     fig.update_traces(mode='lines+markers')
     return fig
 
@@ -220,7 +222,7 @@ def cumulative_by_city(df, layout_overrides=None):
     by_city_by_day["cumulative_sum"] = by_city_by_day.groupby('city')['counts'].cumsum()
     layout = {
         "title": {"text": f"<b>Total Cumulative Confirmed COVID-19 Cases by Day</b>"},
-        "xaxis": {"automargin": True},
+        "xaxis": {"automargin": True, "title": None},
         "yaxis": {
             "automargin": True,
             "title": {"text": "Count"}
@@ -230,6 +232,7 @@ def cumulative_by_city(df, layout_overrides=None):
         layout.update(layout_overrides)
     fig = px.scatter(by_city_by_day, x="reported_date", y="cumulative_sum", color="city")
     fig.update_layout(layout)
+    fig.update_layout(legend_title='<b> City </b>', showlegend=True)
     fig.update_traces(mode='lines+markers')
     return fig
 
@@ -286,7 +289,6 @@ def cumulative_by_day_scatter(df, layout_overrides=None):
         data=go.Scatter(x=by_day.reported_date, y=by_day.cumulative_sum, mode='lines+markers'),
         layout=layout
     )
-
     return fig
 
 
@@ -316,6 +318,7 @@ def histogram_by_city(df, column, cities, layout_overrides=None, sort_by_total=F
     fig.update_layout(layout)
     if sort_by_total:
         fig.update_xaxes(categoryorder="total descending")
+    fig.update_layout(legend_title='<b> City </b>', showlegend=True)
     fig.update_xaxes(categoryorder="category ascending")
     return fig
 
