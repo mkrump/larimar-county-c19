@@ -6,7 +6,6 @@ A [Dash](https://plot.ly/dash/) dashboard summarizing rail related traffic block
 ### Running locally
 Create `.env` file with relevant settings (if want to override defaults)
 ```
-FRA_DOT_GOV_CERT_PATH=fra-dot-gov-chain.pem
 CACHE_DIR=/tmp/cache
 DEBUG=true
 HOST=0.0.0.0
@@ -28,10 +27,10 @@ docker-compose up
     aws ecr get-login-password \
             --region us-west-2 | docker login \
             --username AWS \
-            --password-stdin <ECR-REPO>/ecs-train
+            --password-stdin covid19
 
-    docker tag train/dashboard <ECR-REPO>/ecs-train
-    docker push <ECR-REPO>/ecs-train
+    docker tag covid19/dashboard <ECR-REPO>/covid19
+    docker push <ECR-REPO>/covid19
     ```
 
 * Update the task definition on ECS to use new container
