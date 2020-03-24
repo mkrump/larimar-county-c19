@@ -32,12 +32,12 @@ cache.clear()
 
 MARKDOWN = '''
 #### 
-This dashboard summarizes the Larimar County COVID-19 case data found on the 
-[Larimar County health department website](https://www.larimer.org/health/communicable-disease/coronavirus-covid-19/larimer-county-positive-covid-19-numbers). 
+This dashboard summarizes the Larimer County COVID-19 case data found on the 
+[Larimer County health department website](https://www.larimer.org/health/communicable-disease/coronavirus-covid-19/larimer-county-positive-covid-19-numbers). 
 
 
-Select a city to see city level statistics or to compare the number of COVID-19 cases between the various cities in Larimar County.
-Clear the city filter to see a summary for all of Larimar County. 
+Select a city to see city level data. Select multiple cities to compare between 
+cities within Larimer County. Clear the city filter for a summary of all of Larimer County. 
 '''
 
 app.layout = html.Div(
@@ -67,6 +67,7 @@ app.layout = html.Div(
         html.Div(id='graph-container', className="u-max-full-width"),
         html.Div(id='ticker-text', className="row ticker-text"),
         dcc.Interval(id='interval', interval=server.config["UPDATE_INTERVAL"], n_intervals=0),
+        dcc.Markdown("Matthew Krump | [matthewkrump.com](https://matthewkrump.com/) | Rendered by [Dash](https://plotly.com/dash/)", id='footer', className="footer",)
     ],
 )
 
@@ -79,9 +80,6 @@ def update_metrics():
     data = []
     soup = BeautifulSoup(r.content, 'html.parser')
     table = soup.find('table')
-    text = soup.find(text=re.compile(r'On \d{1,2}/\d{1,2}/\d{4}')).parent.getText()
-    dt, t = re.search(r'(\d{1,2}/\d{1,2}/\d{4}) at (\d{1,2}:\d{1,2}\w{2})', text).groups()
-    last_update = datetime.strptime("{} {}".format(dt, t), '%m/%d/%Y %H:%M%p')
     rows = table.find_all('tr')
     for row in rows:
         cols = row.find_all('td')
@@ -93,7 +91,7 @@ def update_metrics():
     now = datetime.now().isoformat()
     logging.info("update_metrics {0}".format(now))
     data.reported_date = pd.to_datetime(data.reported_date)
-    return data, last_update.isoformat()
+    return data, datetime.now().isoformat()
 
 
 @app.callback(Output('ticker-text', 'children'),
