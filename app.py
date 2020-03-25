@@ -14,6 +14,33 @@ import pandas as pd
 import logging
 
 app = dash.Dash(__name__)
+app.index_string = """<!DOCTYPE html>
+<html>
+    <head>
+        <!-- Global site tag (gtag.js) - Google Analytics -->
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-XR42PS5B9B"></script>
+        <script>
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+
+          gtag('config', 'G-XR42PS5B9B');
+        </script>
+        {%metas%}
+        <title>{%title%}</title>
+        {%favicon%}
+        {%css%}
+    </head>
+    <body>
+        {%app_entry%}
+        <footer>
+            {%config%}
+            {%scripts%}
+            {%renderer%}
+        </footer>
+    </body>
+</html>"""
+
 app.title = 'Larimer County Positive COVID-19 Dashboard'
 server = app.server
 server.config.from_object("settings")
@@ -56,6 +83,7 @@ app.layout = html.Div(
             className="row app-row",
             children=[
                 html.Div(
+                    id="dropdown-container",
                     className="one-half column",
                     children=[
                         html.Label("Select a City", className="select-city-label"),
@@ -67,7 +95,9 @@ app.layout = html.Div(
         html.Div(id='graph-container', className="u-max-full-width"),
         html.Div(id='ticker-text', className="row ticker-text"),
         dcc.Interval(id='interval', interval=server.config["UPDATE_INTERVAL"], n_intervals=0),
-        dcc.Markdown("Matthew Krump | [matthewkrump.com](https://matthewkrump.com/) | Rendered by [Dash](https://plotly.com/dash/)", id='footer', className="footer",)
+        dcc.Markdown(
+            "Matthew Krump | [matthewkrump.com](https://matthewkrump.com/) | Rendered by [Dash](https://plotly.com/dash/)",
+            id='footer', className="footer", )
     ],
 )
 
@@ -165,11 +195,16 @@ def top(df):
             }
         ],
         "layout": {
+            "titlefont": {
+                "size": 24,
+            },
             "title": {"text": f"<b>Total Confirmed COVID-19 Cases by City</b>"},
-            "xaxis": {"automargin": True, "title": None},
+            "xaxis": {"automargin": True, "title": None, "tickfont": {"size": 16}},
             "yaxis": {
                 "automargin": True,
-                "title": {"text": "Count"}
+                "title": {"text": "Count"},
+                "tickfont": {"size": 16},
+                "titlefont": {"size": 20},
             },
         },
     })
@@ -190,18 +225,24 @@ def by_day_by_city_scatter(df, layout_overrides=None):
 
     x = x.sort_values(['city', 'reported_date'])
     layout = {
+        "titlefont": {
+            "size": 24,
+        },
         "title": {"text": f"<b>Total Confirmed COVID-19 Cases by Day</b>"},
-        "xaxis": {"automargin": True, "title": None},
+        "xaxis": {"automargin": True, "title": None, "tickfont": {"size": 16}},
         "yaxis": {
             "automargin": True,
-            "title": {"text": "Count"}
+            "title": {"text": "Count"},
+            "tickfont": {"size": 16},
+            "titlefont": {"size": 20},
         },
+        "legend": {"font": {"size": 16}},
     }
     if layout_overrides:
         layout.update(layout_overrides)
     fig = px.scatter(x, x="reported_date", y="counts", color="city")
     fig.update_layout(layout)
-    fig.update_layout(legend_title='<b> City </b>', showlegend=True)
+    fig.update_layout(showlegend=True, legend_title=None)
     fig.update_traces(mode='lines+markers')
     return fig
 
@@ -219,18 +260,24 @@ def cumulative_by_city(df, layout_overrides=None):
     by_city_by_day = by_city_by_day.sort_values(['city', 'reported_date'])
     by_city_by_day["cumulative_sum"] = by_city_by_day.groupby('city')['counts'].cumsum()
     layout = {
+        "titlefont": {
+            "size": 24,
+        },
         "title": {"text": f"<b>Total Cumulative Confirmed COVID-19 Cases by Day</b>"},
-        "xaxis": {"automargin": True, "title": None},
+        "xaxis": {"automargin": True, "title": None, "tickfont": {"size": 16}},
         "yaxis": {
             "automargin": True,
-            "title": {"text": "Count"}
+            "title": {"text": "Count"},
+            "tickfont": {"size": 16},
+            "titlefont": {"size": 20},
         },
+        "legend": {"font": {"size": 16}},
     }
     if layout_overrides:
         layout.update(layout_overrides)
     fig = px.scatter(by_city_by_day, x="reported_date", y="cumulative_sum", color="city")
     fig.update_layout(layout)
-    fig.update_layout(legend_title='<b> City </b>', showlegend=True)
+    fig.update_layout(showlegend=True, legend_title=None)
     fig.update_traces(mode='lines+markers')
     return fig
 
@@ -241,11 +288,16 @@ def by_day_scatter(df, layout_overrides=None):
     by_day = by_day.resample("D").sum().fillna(0)
     by_day = by_day.sort_index()
     layout = {
+        "titlefont": {
+            "size": 24,
+        },
         "title": {"text": f"<b>Total Confirmed COVID-19 Cases by Day</b>"},
-        "xaxis": {"automargin": True},
+        "xaxis": {"automargin": True, "tickfont": {"size": 16}},
         "yaxis": {
             "automargin": True,
-            "title": {"text": "Count"}
+            "title": {"text": "Count"},
+            "tickfont": {"size": 16},
+            "titlefont": {"size": 20},
         },
     }
     if layout_overrides:
@@ -274,11 +326,16 @@ def cumulative_by_day_scatter(df, layout_overrides=None):
     ).sort_index(level=1).reset_index()
     by_day["cumulative_sum"] = by_day['counts'].cumsum()
     layout = {
+        "titlefont": {
+            "size": 24,
+        },
         "title": {"text": f"<b>Total Cumulative Confirmed COVID-19 Cases by Day</b>"},
-        "xaxis": {"automargin": True},
+        "xaxis": {"automargin": True, "tickfont": {"size": 16}},
         "yaxis": {
             "automargin": True,
-            "title": {"text": "Count"}
+            "title": {"text": "Count"},
+            "tickfont": {"size": 16},
+            "titlefont": {"size": 20},
         },
     }
     if layout_overrides:
@@ -292,11 +349,17 @@ def cumulative_by_day_scatter(df, layout_overrides=None):
 
 def histogram_by_city(df, column, cities, layout_overrides=None, sort_by_total=False):
     layout = {
-        "xaxis": {"automargin": True},
+        "titlefont": {
+            "size": 24,
+        },
+        "xaxis": {"automargin": True, "tickfont": {"size": 16}},
         "yaxis": {
             "automargin": True,
-            "title": {"text": "Count"}
+            "title": {"text": "Count"},
+            "tickfont": {"size": 16},
+            "titlefont": {"size": 20},
         },
+        "legend": {"font": {"size": 16}}
     }
     if layout_overrides:
         layout.update(layout_overrides)
@@ -316,17 +379,22 @@ def histogram_by_city(df, column, cities, layout_overrides=None, sort_by_total=F
     fig.update_layout(layout)
     if sort_by_total:
         fig.update_xaxes(categoryorder="total descending")
-    fig.update_layout(legend_title='<b> City </b>', showlegend=True)
+    fig.update_layout(showlegend=True)
     fig.update_xaxes(categoryorder="category ascending")
     return fig
 
 
 def histogram(df, column, layout_overrides=None, sort_by_total=False):
     layout = {
-        "xaxis": {"automargin": True},
+        "titlefont": {
+            "size": 24,
+        },
+        "xaxis": {"automargin": True, "tickfont": {"size": 16}},
         "yaxis": {
             "automargin": True,
-            "title": {"text": "Count"}
+            "title": {"text": "Count"},
+            "tickfont": {"size": 16},
+            "titlefont": {"size": 20},
         },
     }
     if layout_overrides:
