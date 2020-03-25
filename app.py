@@ -60,11 +60,12 @@ cache.clear()
 MARKDOWN = '''
 #### 
 This dashboard summarizes the Larimer County COVID-19 case data found on the 
-[Larimer County health department website](https://www.larimer.org/health/communicable-disease/coronavirus-covid-19/larimer-county-positive-covid-19-numbers). 
-
+[Larimer County Health Department website](https://www.larimer.org/health/communicable-disease/coronavirus-covid-19/larimer-county-positive-covid-19-numbers).
 
 Select a city to see city level data. Select multiple cities to compare between 
 cities within Larimer County. Clear the city filter for a summary of all of Larimer County. 
+
+*This site is not affiliated with the Larimer County Health Department.*
 '''
 
 app.layout = html.Div(
