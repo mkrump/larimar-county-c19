@@ -1,4 +1,4 @@
-A [Dash](https://plot.ly/dash/) dashboard summarizing rail related traffic blockages using the data collected at [fra.dot.gov/blockedcrossings](https://www.fra.dot.gov/blockedcrossings).
+A [Dash](https://plot.ly/dash/) dashboard summarizing confirmed Larimer County COVID-19 cases.
 
 ### Requirements
 - [Docker](https://www.docker.com/)
@@ -38,5 +38,5 @@ docker-compose up
 
 
 ### Demo
-[blocked crossing dashboard](http://blocked-crossings.matthewkrump.com/) 
+[Larimer County COVID-19 dashboard](https://www.larimer-county-c19.com/) 
 

@@ -168,9 +168,9 @@ def update_figure(cities, _):
         fig = histogram(orig_df, "age_range",
                         layout_overrides={"title": "<b>Total Confirmed COVID-19 Cases by Age Range</b>"})
         figures.append(dcc.Graph(id="age_range", figure=fig, className="plot"))
-        fig = histogram(orig_df, "gender",
-                        layout_overrides={"title": "<b>Total Confirmed COVID-19 Cases by Gender</b>"})
-        figures.append(dcc.Graph(id="gender", figure=fig, className="plot"))
+        fig = histogram(orig_df, "sex",
+                        layout_overrides={"title": "<b>Total Confirmed COVID-19 Cases by Sex</b>"})
+        figures.append(dcc.Graph(id="sex", figure=fig, className="plot"))
         return figures
 
     dff = orig_df[orig_df["city"].isin(cities)]
@@ -181,9 +181,9 @@ def update_figure(cities, _):
     fig = histogram_by_city(orig_df, "age_range", cities,
                             layout_overrides={"title": "<b>Total Confirmed COVID-19 Cases by Age Range</b>"})
     figures.append(dcc.Graph(id="age_range", figure=fig, className="plot"))
-    fig = histogram_by_city(orig_df, "gender", cities,
-                            layout_overrides={"title": "<b>Total Confirmed COVID-19 Cases by Gender</b>"})
-    figures.append(dcc.Graph(id="gender", figure=fig, className="plot"))
+    fig = histogram_by_city(orig_df, "sex", cities,
+                            layout_overrides={"title": "<b>Total Confirmed COVID-19 Cases by Sex</b>"})
+    figures.append(dcc.Graph(id="sex", figure=fig, className="plot"))
     return figures
 
 
