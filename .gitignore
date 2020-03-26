@@ -32,3 +32,6 @@ venv.bak/
 
 #cache
 cache/
+
+#data validation notebook
+data-validation.ipynb
