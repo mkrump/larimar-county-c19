@@ -9,6 +9,7 @@ import dash_html_components as html
 import requests
 from bs4 import BeautifulSoup
 from dash.dependencies import Input, Output
+from flask import render_template, send_file
 from flask_caching import Cache
 import pandas as pd
 import logging
@@ -413,6 +414,11 @@ def histogram(df, column, layout_overrides=None, sort_by_total=False):
         fig.update_xaxes(categoryorder="total descending")
     fig.update_xaxes(categoryorder="category ascending")
     return fig
+
+
+@app.server.route('/robots.txt')
+def robots():
+    return send_file('robots.txt', mimetype="text")
 
 
 if __name__ == '__main__':
