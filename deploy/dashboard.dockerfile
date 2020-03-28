@@ -7,6 +7,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY settings.py ./
 COPY assets ./assets
+COPY robots.txt ./
 
 COPY app.py ./
 
