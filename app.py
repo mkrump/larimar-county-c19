@@ -1,23 +1,25 @@
+import copy
+import logging
 from datetime import datetime
-import re
 
-import plotly.graph_objs as go
 import dash
 import dash_core_components as dcc
-import plotly.express as px
 import dash_html_components as html
+import pandas as pd
+import plotly.express as px
+import plotly.graph_objs as go
 import requests
 from bs4 import BeautifulSoup
 from dash.dependencies import Input, Output
-from flask import render_template, send_file
+from flask import send_file
 from flask_caching import Cache
-import pandas as pd
-import logging
 
 app = dash.Dash(__name__)
 app.index_string = """<!DOCTYPE html>
 <html>
     <head>
+        <meta name="Description" content="Summary of Larimer County COVID-19 Cases">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
         <!-- Global site tag (gtag.js) - Google Analytics -->
         <script async src="https://www.googletagmanager.com/gtag/js?id=G-XR42PS5B9B"></script>
         <script>
@@ -42,7 +44,7 @@ app.index_string = """<!DOCTYPE html>
     </body>
 </html>"""
 
-app.title = 'Larimer County Positive COVID-19 Dashboard'
+app.title = 'Larimer County Positive COVID-19'
 server = app.server
 server.config.from_object("settings")
 logging.basicConfig(level='INFO')
@@ -77,7 +79,7 @@ app.layout = html.Div(
         html.Div(
             className="row app-row",
             children=[
-                html.H1("Larimer County Positive COVID-19 Dashboard"),
+                html.H2("Larimer County Positive COVID-19 Dashboard"),
                 dcc.Markdown(MARKDOWN)
             ],
         ),
@@ -116,7 +118,7 @@ def update_metrics():
     for row in rows:
         cols = row.find_all('td')
         cols = [ele.text.strip() for ele in cols]
-        data.append(cols)  
+        data.append(cols)
     columns = data[0]
     cols = [c.lower().replace(" ", '_') for c in columns]
     data = pd.DataFrame(data[1:], columns=cols)
@@ -169,10 +171,10 @@ def update_figure(cities, _):
         fig = by_day_scatter(orig_df)
         figures.append(dcc.Graph(id="by_day", figure=fig, className="plot"))
         fig = histogram(orig_df, "age_range",
-                        layout_overrides={"title": "<b>Total Confirmed COVID-19 Cases by Age Range</b>"})
+                        layout_overrides={"title": "<b>COVID-19 Cases by Age Range</b>"})
         figures.append(dcc.Graph(id="age_range", figure=fig, className="plot"))
         fig = histogram(orig_df, "sex",
-                        layout_overrides={"title": "<b>Total Confirmed COVID-19 Cases by Sex</b>"})
+                        layout_overrides={"title": "<b>COVID-19 Cases by Sex</b>"})
         figures.append(dcc.Graph(id="sex", figure=fig, className="plot"))
         return figures
 
@@ -182,36 +184,43 @@ def update_figure(cities, _):
     fig = by_day_by_city_scatter(dff)
     figures.append(dcc.Graph(id="by_day_cumulative", figure=fig, className="plot"))
     fig = histogram_by_city(orig_df, "age_range", cities,
-                            layout_overrides={"title": "<b>Total Confirmed COVID-19 Cases by Age Range</b>"})
+                            layout_overrides={"title": "<b>COVID-19 Cases by Age Range</b>"})
     figures.append(dcc.Graph(id="age_range", figure=fig, className="plot"))
     fig = histogram_by_city(orig_df, "sex", cities,
-                            layout_overrides={"title": "<b>Total Confirmed COVID-19 Cases by Sex</b>"})
+                            layout_overrides={"title": "<b>COVID-19 Cases by Sex</b>"})
     figures.append(dcc.Graph(id="sex", figure=fig, className="plot"))
     return figures
 
 
+DEFAULT_LAYOUT = {
+    "margin": {
+        "l": 0,
+        "r": 0,
+        "pad": 0,
+    },
+    "xaxis": {
+        "automargin": True,
+        "title": None,
+    },
+    "yaxis": {
+        "automargin": True,
+        "title": None
+    },
+}
+
+
 def top(df):
+    layout = copy.deepcopy(DEFAULT_LAYOUT)
     fig = go.Figure({
         "data": [
             {
                 "x": df["city"],
                 "type": "histogram",
-            }
+            },
         ],
-        "layout": {
-            "titlefont": {
-                "size": 24,
-            },
-            "title": {"text": f"<b>Total Confirmed COVID-19 Cases by City</b>"},
-            "xaxis": {"automargin": True, "title": None, "tickfont": {"size": 16}},
-            "yaxis": {
-                "automargin": True,
-                "title": {"text": "Count"},
-                "tickfont": {"size": 16},
-                "titlefont": {"size": 20},
-            },
-        },
+        "layout": layout,
     })
+    fig.update_layout(title_text="<b>COVID-19 Cases by City</b>")
     fig.update_xaxes(categoryorder="total descending")
     return fig
 
@@ -226,28 +235,15 @@ def by_day_by_city_scatter(df, layout_overrides=None):
     ).asfreq(
         'D', fill_value=0
     ).stack().sort_index(level=1).reset_index()
-
     x = x.sort_values(['city', 'reported_date'])
-    layout = {
-        "titlefont": {
-            "size": 24,
-        },
-        "title": {"text": f"<b>Total Confirmed COVID-19 Cases by Day</b>"},
-        "xaxis": {"automargin": True, "title": None, "tickfont": {"size": 16}},
-        "yaxis": {
-            "automargin": True,
-            "title": {"text": "Count"},
-            "tickfont": {"size": 16},
-            "titlefont": {"size": 20},
-        },
-        "legend": {"font": {"size": 16}},
-    }
+    fig = px.scatter(x, x="reported_date", y="counts", color="city")
+    layout = copy.deepcopy(DEFAULT_LAYOUT)
+    fig.update_layout(title_text="<b>Daily COVID-19 Cases</b>")
+    fig.update_layout(showlegend=True, legend_title=None, legend_orientation="h")
+    fig.update_traces(mode='lines+markers')
     if layout_overrides:
         layout.update(layout_overrides)
-    fig = px.scatter(x, x="reported_date", y="counts", color="city")
     fig.update_layout(layout)
-    fig.update_layout(showlegend=True, legend_title=None)
-    fig.update_traces(mode='lines+markers')
     return fig
 
 
@@ -263,26 +259,15 @@ def cumulative_by_city(df, layout_overrides=None):
     ).stack().sort_index(level=1).reset_index()
     by_city_by_day = by_city_by_day.sort_values(['city', 'reported_date'])
     by_city_by_day["cumulative_sum"] = by_city_by_day.groupby('city')['counts'].cumsum()
-    layout = {
-        "titlefont": {
-            "size": 24,
-        },
-        "title": {"text": f"<b>Total Cumulative Confirmed COVID-19 Cases by Day</b>"},
-        "xaxis": {"automargin": True, "title": None, "tickfont": {"size": 16}},
-        "yaxis": {
-            "automargin": True,
-            "title": {"text": "Count"},
-            "tickfont": {"size": 16},
-            "titlefont": {"size": 20},
-        },
-        "legend": {"font": {"size": 16}},
-    }
+
+    fig = px.scatter(by_city_by_day, x="reported_date", y="cumulative_sum", color="city")
+    layout = copy.deepcopy(DEFAULT_LAYOUT)
+    fig.update_layout(title_text="<b>Cumulative COVID-19 Cases")
+    fig.update_layout(showlegend=True, legend_title=None, legend_orientation="h")
+    fig.update_traces(mode='lines+markers')
     if layout_overrides:
         layout.update(layout_overrides)
-    fig = px.scatter(by_city_by_day, x="reported_date", y="cumulative_sum", color="city")
     fig.update_layout(layout)
-    fig.update_layout(showlegend=True, legend_title=None)
-    fig.update_traces(mode='lines+markers')
     return fig
 
 
@@ -291,21 +276,7 @@ def by_day_scatter(df, layout_overrides=None):
     by_day.index = pd.to_datetime(by_day.index)
     by_day = by_day.resample("D").sum().fillna(0)
     by_day = by_day.sort_index()
-    layout = {
-        "titlefont": {
-            "size": 24,
-        },
-        "title": {"text": f"<b>Total Confirmed COVID-19 Cases by Day</b>"},
-        "xaxis": {"automargin": True, "tickfont": {"size": 16}},
-        "yaxis": {
-            "automargin": True,
-            "title": {"text": "Count"},
-            "tickfont": {"size": 16},
-            "titlefont": {"size": 20},
-        },
-    }
-    if layout_overrides:
-        layout.update(layout_overrides)
+
     fig = go.Figure({
         "data": [
             {
@@ -315,8 +286,12 @@ def by_day_scatter(df, layout_overrides=None):
                 "mode": "lines+markers"
             }
         ],
-        "layout": layout,
     })
+    layout = copy.deepcopy(DEFAULT_LAYOUT)
+    fig.update_layout(title_text="<b>Daily COVID-19 Cases</b>")
+    if layout_overrides:
+        layout.update(layout_overrides)
+    fig.update_layout(layout)
     return fig
 
 
@@ -329,44 +304,17 @@ def cumulative_by_day_scatter(df, layout_overrides=None):
         'D', fill_value=0
     ).sort_index(level=1).reset_index()
     by_day["cumulative_sum"] = by_day['counts'].cumsum()
-    layout = {
-        "titlefont": {
-            "size": 24,
-        },
-        "title": {"text": f"<b>Total Cumulative Confirmed COVID-19 Cases by Day</b>"},
-        "xaxis": {"automargin": True, "tickfont": {"size": 16}},
-        "yaxis": {
-            "automargin": True,
-            "title": {"text": "Count"},
-            "tickfont": {"size": 16},
-            "titlefont": {"size": 20},
-        },
-    }
+
+    fig = go.Figure(data=go.Scatter(x=by_day.reported_date, y=by_day.cumulative_sum, mode='lines+markers'))
+    fig.update_layout(title_text="<b>Cumulative COVID-19 Cases</b>")
+    layout = copy.deepcopy(DEFAULT_LAYOUT)
     if layout_overrides:
         layout.update(layout_overrides)
-    fig = go.Figure(
-        data=go.Scatter(x=by_day.reported_date, y=by_day.cumulative_sum, mode='lines+markers'),
-        layout=layout
-    )
+    fig.update_layout(layout)
     return fig
 
 
 def histogram_by_city(df, column, cities, layout_overrides=None, sort_by_total=False):
-    layout = {
-        "titlefont": {
-            "size": 24,
-        },
-        "xaxis": {"automargin": True, "tickfont": {"size": 16}},
-        "yaxis": {
-            "automargin": True,
-            "title": {"text": "Count"},
-            "tickfont": {"size": 16},
-            "titlefont": {"size": 20},
-        },
-        "legend": {"font": {"size": 16}}
-    }
-    if layout_overrides:
-        layout.update(layout_overrides)
     x = (df.groupby(["city", column])[column]
          .count()
          .unstack(fill_value=0)
@@ -378,31 +326,21 @@ def histogram_by_city(df, column, cities, layout_overrides=None, sort_by_total=F
     for city in cities:
         bar = x[x.city == city]
         bars.append(go.Bar(name=city, x=bar[column], y=bar.counts))
+
     fig = go.Figure(data=bars)
     fig.update_layout(barmode='group')
-    fig.update_layout(layout)
+    fig.update_layout(showlegend=True, legend_orientation="h")
+    fig.update_xaxes(categoryorder="category ascending")
+    layout = copy.deepcopy(DEFAULT_LAYOUT)
+    if layout_overrides:
+        layout.update(layout_overrides)
     if sort_by_total:
         fig.update_xaxes(categoryorder="total descending")
-    fig.update_layout(showlegend=True)
-    fig.update_xaxes(categoryorder="category ascending")
+    fig.update_layout(layout)
     return fig
 
 
 def histogram(df, column, layout_overrides=None, sort_by_total=False):
-    layout = {
-        "titlefont": {
-            "size": 24,
-        },
-        "xaxis": {"automargin": True, "tickfont": {"size": 16}},
-        "yaxis": {
-            "automargin": True,
-            "title": {"text": "Count"},
-            "tickfont": {"size": 16},
-            "titlefont": {"size": 20},
-        },
-    }
-    if layout_overrides:
-        layout.update(layout_overrides)
     fig = go.Figure({
         "data": [
             {
@@ -410,11 +348,14 @@ def histogram(df, column, layout_overrides=None, sort_by_total=False):
                 "type": "histogram",
             }
         ],
-        "layout": layout,
     })
+    layout = copy.deepcopy(DEFAULT_LAYOUT)
+    fig.update_xaxes(categoryorder="category ascending")
     if sort_by_total:
         fig.update_xaxes(categoryorder="total descending")
-    fig.update_xaxes(categoryorder="category ascending")
+    if layout_overrides:
+        layout.update(layout_overrides)
+    fig.update_layout(layout)
     return fig
 
 

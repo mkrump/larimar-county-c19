@@ -1,19 +1,19 @@
-#dropdown-container {
-    font-size: 2.25rem;
-}
-
-.hovertext text {
-    font-size: 2.25rem !important;
+.modebar {
+    display: none !important;
 }
 
 @media (min-width: 1000px) {
-    #dropdown-container {
-        font-size: 1.5rem;
+    .modebar {
+        display: inline !important;
     }
 
-    .hovertext text {
-        font-size: 1.5rem !important;
+    .plot {
+        height: 60rem;
     }
+}
+
+.plot {
+    margin-bottom: 1rem;
 }
 
 .select-city-label {
@@ -29,9 +29,6 @@
     margin-bottom: 2rem;
 }
 
-.plot {
-    height: 60rem;
-}
 
 .footer {
     font-size: 1.25rem;
