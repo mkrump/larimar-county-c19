@@ -44,7 +44,7 @@ app.index_string = """<!DOCTYPE html>
     </body>
 </html>"""
 
-app.title = 'Larimer County Positive COVID-19'
+app.title = 'Larimer County COVID-19'
 server = app.server
 server.config.from_object("settings")
 logging.basicConfig(level='INFO')
@@ -62,7 +62,7 @@ cache.clear()
 
 MARKDOWN = '''
 #### 
-This dashboard summarizes the Larimer County COVID-19 case data found on the 
+This site summarizes the Larimer County COVID-19 case data found on the 
 [Larimer County Health Department website](https://www.larimer.org/health/communicable-disease/coronavirus-covid-19/larimer-county-positive-covid-19-numbers).
 
 Select a city to see city level data. Select multiple cities to compare between 
@@ -79,7 +79,7 @@ app.layout = html.Div(
         html.Div(
             className="row app-row",
             children=[
-                html.H2("Larimer County Positive COVID-19 Dashboard"),
+                html.H2("Larimer County COVID-19"),
                 dcc.Markdown(MARKDOWN)
             ],
         ),
