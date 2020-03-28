@@ -116,10 +116,11 @@ def update_metrics():
     for row in rows:
         cols = row.find_all('td')
         cols = [ele.text.strip() for ele in cols]
-        data.append([ele for ele in cols if ele])  # Get rid of empty values
+        data.append(cols)  
     columns = data[0]
     cols = [c.lower().replace(" ", '_') for c in columns]
     data = pd.DataFrame(data[1:], columns=cols)
+    data.city = data.city.str.title()
     now = datetime.now().isoformat()
     logging.info("update_metrics {0}".format(now))
     data.reported_date = pd.to_datetime(data.reported_date)
