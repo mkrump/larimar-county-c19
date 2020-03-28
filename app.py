@@ -120,6 +120,7 @@ def update_metrics():
     columns = data[0]
     cols = [c.lower().replace(" ", '_') for c in columns]
     data = pd.DataFrame(data[1:], columns=cols)
+    data = data.dropna(axis=0, how='all')
     data.city = data.city.str.title()
     now = datetime.now().isoformat()
     logging.info("update_metrics {0}".format(now))
