@@ -96,12 +96,15 @@ app.layout = html.Div(
                     ],
                 )],
         ),
-        html.Div(id='graph-container', className="u-max-full-width"),
+        dcc.Loading(id='loading', children=[
+            html.Div(id='graph-container', className="u-max-full-width"),
+        ]),
         html.Div(id='ticker-text', className="row ticker-text"),
         dcc.Interval(id='interval', interval=server.config["UPDATE_INTERVAL"], n_intervals=0),
         dcc.Markdown(
             "Matthew Krump | [matthewkrump.com](https://matthewkrump.com/) | Rendered by [Dash](https://plotly.com/dash/)",
             id='footer', className="footer", )
+
     ],
 )
 
