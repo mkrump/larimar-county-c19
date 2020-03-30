@@ -1,3 +1,5 @@
+@import url('//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css');
+
 .modebar {
     display: none !important;
 }
@@ -39,3 +41,13 @@
     color: gray;
 }
 
+.global-error i {
+    padding-right: .2rem;
+}
+.global-error {
+    font-size: 1.5rem;
+    padding: .85rem;
+    vertical-align: middle;
+    color: #D8000C;
+    background-color: #FFD2D2;
+}

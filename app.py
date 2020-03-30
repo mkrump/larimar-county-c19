@@ -109,6 +109,15 @@ app.layout = html.Div(
 )
 
 
+# date format is bad / missing year sometimes
+# try to fix these if possible
+def fix_bad_dates(d):
+    date_parts = d.split("/")
+    if len(date_parts) == 2:
+        return f"{date_parts[0]}/{date_parts[1]}/2020"
+    return d
+
+
 @cache.cached()
 def update_metrics():
     r = requests.get(
@@ -129,7 +138,7 @@ def update_metrics():
     data.city = data.city.str.title()
     now = datetime.now().isoformat()
     logging.info("update_metrics {0}".format(now))
-    data.loc[data.reported_date == "3/29" "", ["reported_date"]] = "3/29/20"
+    data.reported_date = data.reported_date.apply(fix_bad_dates)
     data.reported_date = pd.to_datetime(data.reported_date)
     return data, datetime.now().isoformat()
 
@@ -139,8 +148,17 @@ def update_metrics():
 def update_date(n_intervals):
     # call once and chain other dependent calls of this, so not making
     # api calls on every update
-    _, now = update_metrics()
-    return [html.P(f"Last update: {now}")]
+    try:
+        _, now = update_metrics()
+        return [html.P(f"Last update: {now}")]
+    except:
+        return html.Div(
+            className='global-error',
+            children=[
+                html.I(className="fa fa-times-circle"),
+                '  There was an issue retrieving the updated data. Please check back shortly.'
+            ]
+        )
 
 
 @app.callback(
