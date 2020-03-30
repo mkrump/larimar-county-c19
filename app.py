@@ -117,12 +117,14 @@ def update_metrics():
     data = []
     soup = BeautifulSoup(r.content, 'html.parser')
     table = soup.find('table')
+    header = table.find_all('th')
+    columns = [ele.text.strip() for ele in header]
+    data.append(columns)
     rows = table.find_all('tr')
     for row in rows:
         cols = row.find_all('td')
         cols = [ele.text.strip() for ele in cols]
         data.append(cols)
-    columns = data[0]
     cols = [c.lower().replace(" ", '_') for c in columns]
     data = pd.DataFrame(data[1:], columns=cols)
     data = data.dropna(axis=0, how='all')
