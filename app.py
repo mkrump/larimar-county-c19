@@ -117,20 +117,19 @@ def update_metrics():
     data = []
     soup = BeautifulSoup(r.content, 'html.parser')
     table = soup.find('table')
-    header = table.find_all('th')
-    columns = [ele.text.strip() for ele in header]
-    data.append(columns)
     rows = table.find_all('tr')
     for row in rows:
         cols = row.find_all('td')
         cols = [ele.text.strip() for ele in cols]
         data.append(cols)
+    columns = data[0]
     cols = [c.lower().replace(" ", '_') for c in columns]
     data = pd.DataFrame(data[1:], columns=cols)
     data = data.dropna(axis=0, how='all')
     data.city = data.city.str.title()
     now = datetime.now().isoformat()
     logging.info("update_metrics {0}".format(now))
+    data.loc[data.reported_date == "3/29" "", ["reported_date"]] = "3/29/20"
     data.reported_date = pd.to_datetime(data.reported_date)
     return data, datetime.now().isoformat()
 
@@ -175,9 +174,9 @@ def update_figure(cities, _):
         figures.append(dcc.Graph(id="by_day_cumulative", figure=fig, className="plot"))
         fig = by_day_scatter(orig_df)
         figures.append(dcc.Graph(id="by_day", figure=fig, className="plot"))
-        fig = histogram(orig_df, "age_range",
+        fig = histogram(orig_df, "age",
                         layout_overrides={"title": "<b>COVID-19 Cases by Age Range</b>"})
-        figures.append(dcc.Graph(id="age_range", figure=fig, className="plot"))
+        figures.append(dcc.Graph(id="age", figure=fig, className="plot"))
         fig = histogram(orig_df, "sex",
                         layout_overrides={"title": "<b>COVID-19 Cases by Sex</b>"})
         figures.append(dcc.Graph(id="sex", figure=fig, className="plot"))
@@ -188,9 +187,9 @@ def update_figure(cities, _):
     figures.append(dcc.Graph(id="by_day", figure=fig, className="plot"))
     fig = by_day_by_city_scatter(dff)
     figures.append(dcc.Graph(id="by_day_cumulative", figure=fig, className="plot"))
-    fig = histogram_by_city(orig_df, "age_range", cities,
+    fig = histogram_by_city(orig_df, "age", cities,
                             layout_overrides={"title": "<b>COVID-19 Cases by Age Range</b>"})
-    figures.append(dcc.Graph(id="age_range", figure=fig, className="plot"))
+    figures.append(dcc.Graph(id="age", figure=fig, className="plot"))
     fig = histogram_by_city(orig_df, "sex", cities,
                             layout_overrides={"title": "<b>COVID-19 Cases by Sex</b>"})
     figures.append(dcc.Graph(id="sex", figure=fig, className="plot"))
