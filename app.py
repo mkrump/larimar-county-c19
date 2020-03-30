@@ -192,8 +192,13 @@ def update_figure(cities, _):
         figures.append(dcc.Graph(id="by_day_cumulative", figure=fig, className="plot"))
         fig = by_day_scatter(orig_df)
         figures.append(dcc.Graph(id="by_day", figure=fig, className="plot"))
+        # 100s, 20s etc sort by numeric value
+        age_labels = sorted(orig_df.age.unique(), key=lambda x: int(x.replace("s", "")))
         fig = histogram(orig_df, "age",
-                        layout_overrides={"title": "<b>COVID-19 Cases by Age Range</b>"})
+                        layout_overrides={
+                            "title": "<b>COVID-19 Cases by Age Range</b>",
+                            "xaxis": {"categoryarray": age_labels, "categoryorder": "array"}}
+                        )
         figures.append(dcc.Graph(id="age", figure=fig, className="plot"))
         fig = histogram(orig_df, "sex",
                         layout_overrides={"title": "<b>COVID-19 Cases by Sex</b>"})
@@ -205,8 +210,12 @@ def update_figure(cities, _):
     figures.append(dcc.Graph(id="by_day", figure=fig, className="plot"))
     fig = by_day_by_city_scatter(dff)
     figures.append(dcc.Graph(id="by_day_cumulative", figure=fig, className="plot"))
+    age_labels = sorted(orig_df.age.unique(), key=lambda x: int(x.replace("s", "")))
     fig = histogram_by_city(orig_df, "age", cities,
-                            layout_overrides={"title": "<b>COVID-19 Cases by Age Range</b>"})
+                            layout_overrides={
+                                "title": "<b>COVID-19 Cases by Age Range</b>",
+                                "xaxis": {"categoryarray": age_labels, "categoryorder": "array"}}
+                            )
     figures.append(dcc.Graph(id="age", figure=fig, className="plot"))
     fig = histogram_by_city(orig_df, "sex", cities,
                             layout_overrides={"title": "<b>COVID-19 Cases by Sex</b>"})
