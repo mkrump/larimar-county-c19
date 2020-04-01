@@ -123,24 +123,44 @@ def update_metrics():
     r = requests.get(
         "https://www.larimer.org/health/communicable-disease/coronavirus-covid-19/larimer-county-positive-covid-19-numbers"
     )
-    data = []
     soup = BeautifulSoup(r.content, 'html.parser')
-    table = soup.find('table')
-    rows = table.find_all('tr')
+    tables = soup.find_all('table')
+    cases = parse_table(tables[0])
+    cases_df = create_cases_df(cases)
+    deaths = parse_table(tables[1])
+    deaths_df = create_deaths_df(deaths=deaths)
+    now = datetime.now().isoformat()
+    logging.info("update_metrics {0}".format(now))
+    return deaths_df, cases_df, datetime.now().isoformat()
+
+
+def create_deaths_df(deaths):
+    columns = [c.lower().replace(" ", '_') for c in deaths[0]]
+    cases_df = pd.DataFrame(deaths[1:], columns=columns)
+    deaths = cases_df.dropna(axis=0, how='all')
+    deaths.city = cases_df.city.str.title()
+    deaths.age = deaths.age.apply(lambda x: str(int(x) - (int(x) % 10)) + "s")
+    return deaths
+
+
+def create_cases_df(cases):
+    columns = [c.lower().replace(" ", '_') for c in cases[0]]
+    cases_df = pd.DataFrame(cases[1:], columns=columns)
+    cases_df = cases_df.dropna(axis=0, how='all')
+    cases_df.city = cases_df.city.str.title()
+    cases_df.reported_date = cases_df.reported_date.apply(fix_bad_dates)
+    cases_df.reported_date = pd.to_datetime(cases_df.reported_date)
+    return cases_df
+
+
+def parse_table(html_table):
+    data = []
+    rows = html_table.find_all('tr')
     for row in rows:
         cols = row.find_all('td')
         cols = [ele.text.strip() for ele in cols]
         data.append(cols)
-    columns = data[0]
-    cols = [c.lower().replace(" ", '_') for c in columns]
-    data = pd.DataFrame(data[1:], columns=cols)
-    data = data.dropna(axis=0, how='all')
-    data.city = data.city.str.title()
-    now = datetime.now().isoformat()
-    logging.info("update_metrics {0}".format(now))
-    data.reported_date = data.reported_date.apply(fix_bad_dates)
-    data.reported_date = pd.to_datetime(data.reported_date)
-    return data, datetime.now().isoformat()
+    return data
 
 
 @app.callback(Output('ticker-text', 'children'),
@@ -149,7 +169,7 @@ def update_date(n_intervals):
     # call once and chain other dependent calls of this, so not making
     # api calls on every update
     try:
-        _, now = update_metrics()
+        _, _, now = update_metrics()
         return [html.P(f"Last update: {now}")]
     except:
         return html.Div(
@@ -165,9 +185,9 @@ def update_date(n_intervals):
     Output('demo-dropdown', "options"),
     [Input('ticker-text', "children")])
 def update_dropdown(children):
-    orig_df, _ = update_metrics()
+    _, cases_df, _ = update_metrics()
     # TODO would be nice not do this each time probably can cache too
-    df = orig_df.drop_duplicates(subset=['city'])
+    df = cases_df.drop_duplicates(subset=['city'])
     values = [{"label": value, "value": value} for label, value in zip(df['city'], df['city']) if label]
     return sorted(values, key=lambda k: k['label'])
 
@@ -179,46 +199,67 @@ def update_dropdown(children):
         Input('ticker-text', "children")
     ]
 )
-@cache.memoize()
+# @cache.memoize()
 def update_figure(cities, _):
     figures = []
     now = datetime.now().isoformat()
     logging.info("update_figure {0}".format(now))
-    orig_df, _ = update_metrics()
+    deaths_df, cases_df, _ = update_metrics()
     if cities is None or len(cities) == 0:
-        fig = top(orig_df)
-        figures.append(dcc.Graph(id="top_n", figure=fig, className="plot"))
-        fig = cumulative_by_day_scatter(orig_df)
+        fig = cumulative_by_day_scatter(cases_df)
         figures.append(dcc.Graph(id="by_day_cumulative", figure=fig, className="plot"))
-        fig = by_day_scatter(orig_df)
+        fig = by_day_scatter(cases_df)
         figures.append(dcc.Graph(id="by_day", figure=fig, className="plot"))
+        fig = top(cases_df)
+        figures.append(dcc.Graph(id="top_n", figure=fig, className="plot"))
+        fig = top(deaths_df, layout_overrides={"title": "<b>COVID-19 Deaths by City</b>"})
+        figures.append(dcc.Graph(id="deaths", figure=fig, className="plot"))
         # 100s, 20s etc sort by numeric value
-        age_labels = sorted(orig_df.age.unique(), key=lambda x: int(x.replace("s", "")))
-        fig = histogram(orig_df, "age",
+        age_labels = sorted(cases_df.age.unique(), key=lambda x: int(x.replace("s", "")))
+        fig = histogram(cases_df, "age",
                         layout_overrides={
                             "title": "<b>COVID-19 Cases by Age Range</b>",
                             "xaxis": {"categoryarray": age_labels, "categoryorder": "array"}}
                         )
         figures.append(dcc.Graph(id="age", figure=fig, className="plot"))
-        fig = histogram(orig_df, "sex",
+        fig = histogram(deaths_df, "age",
+                        layout_overrides={
+                            "title": "<b>COVID-19 Deaths by Age Range</b>",
+                            "xaxis": {"categoryarray": age_labels, "categoryorder": "array"}}
+                        )
+        figures.append(dcc.Graph(id="deaths_age", figure=fig, className="plot"))
+        fig = histogram(cases_df, "sex",
                         layout_overrides={"title": "<b>COVID-19 Cases by Sex</b>"})
         figures.append(dcc.Graph(id="sex", figure=fig, className="plot"))
+        fig = histogram(deaths_df, "sex",
+                        layout_overrides={"title": "<b>COVID-19 Deaths by Sex</b>"}
+                        )
+        figures.append(dcc.Graph(id="deaths_sex", figure=fig, className="plot"))
         return figures
 
-    dff = orig_df[orig_df["city"].isin(cities)]
+    dff = cases_df[cases_df["city"].isin(cities)]
     fig = cumulative_by_city(dff)
     figures.append(dcc.Graph(id="by_day", figure=fig, className="plot"))
     fig = by_day_by_city_scatter(dff)
     figures.append(dcc.Graph(id="by_day_cumulative", figure=fig, className="plot"))
-    age_labels = sorted(orig_df.age.unique(), key=lambda x: int(x.replace("s", "")))
-    fig = histogram_by_city(orig_df, "age", cities,
+    age_labels = sorted(cases_df.age.unique(), key=lambda x: int(x.replace("s", "")))
+    fig = histogram_by_city(cases_df, "age", cities,
                             layout_overrides={
                                 "title": "<b>COVID-19 Cases by Age Range</b>",
                                 "xaxis": {"categoryarray": age_labels, "categoryorder": "array"}}
                             )
+    figures.append(dcc.Graph(id="deaths_age", figure=fig, className="plot"))
+    fig = histogram_by_city(deaths_df, "age", cities,
+                            layout_overrides={
+                                "title": "<b>COVID-19 Deaths by Age Range</b>",
+                                "xaxis": {"categoryarray": age_labels, "categoryorder": "array"}}
+                            )
     figures.append(dcc.Graph(id="age", figure=fig, className="plot"))
-    fig = histogram_by_city(orig_df, "sex", cities,
+    fig = histogram_by_city(cases_df, "sex", cities,
                             layout_overrides={"title": "<b>COVID-19 Cases by Sex</b>"})
+    figures.append(dcc.Graph(id="deaths_sex", figure=fig, className="plot"))
+    fig = histogram_by_city(deaths_df, "sex", cities,
+                            layout_overrides={"title": "<b>COVID-19 Deaths by Sex</b>"})
     figures.append(dcc.Graph(id="sex", figure=fig, className="plot"))
     return figures
 
@@ -240,7 +281,7 @@ DEFAULT_LAYOUT = {
 }
 
 
-def top(df):
+def top(df, layout_overrides=None):
     layout = copy.deepcopy(DEFAULT_LAYOUT)
     fig = go.Figure({
         "data": [
@@ -253,6 +294,9 @@ def top(df):
     })
     fig.update_layout(title_text="<b>COVID-19 Cases by City</b>")
     fig.update_xaxes(categoryorder="total descending")
+    if layout_overrides:
+        layout.update(layout_overrides)
+    fig.update_layout(layout)
     return fig
 
 
@@ -372,14 +416,11 @@ def histogram_by_city(df, column, cities, layout_overrides=None, sort_by_total=F
 
 
 def histogram(df, column, layout_overrides=None, sort_by_total=False):
-    fig = go.Figure({
-        "data": [
-            {
-                "x": df[column],
-                "type": "histogram",
-            }
-        ],
-    })
+    x = (df.groupby([column])[column]
+         .count()
+         .reset_index(name="counts")
+         .sort_index(level=0))
+    fig = go.Figure(data=go.Bar(x=x[column], y=x.counts))
     layout = copy.deepcopy(DEFAULT_LAYOUT)
     fig.update_xaxes(categoryorder="category ascending")
     if sort_by_total:
