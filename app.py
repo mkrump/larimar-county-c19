@@ -109,15 +109,6 @@ app.layout = html.Div(
 )
 
 
-# date format is bad / missing year sometimes
-# try to fix these if possible
-def fix_bad_dates(d):
-    date_parts = d.split("/")
-    if len(date_parts) == 2:
-        return f"{date_parts[0]}/{date_parts[1]}/2020"
-    return d
-
-
 @cache.cached()
 def update_metrics():
     r = requests.get(
@@ -134,12 +125,22 @@ def update_metrics():
     return deaths_df, cases_df, datetime.now().isoformat()
 
 
+# date format is bad / missing year sometimes
+# try to fix these if possible
+def fix_bad_dates(d):
+    date_parts = d.split("/")
+    if len(date_parts) == 2:
+        return f"{date_parts[0]}/{date_parts[1]}/2020"
+    return d
+
+
 def create_deaths_df(deaths):
     columns = [c.lower().replace(" ", '_') for c in deaths[0]]
     cases_df = pd.DataFrame(deaths[1:], columns=columns)
     deaths = cases_df.dropna(axis=0, how='all')
     deaths.city = cases_df.city.str.title()
     deaths.age = deaths.age.apply(lambda x: str(int(x) - (int(x) % 10)) + "s")
+    deaths.sex = deaths.sex.replace({"F": "Female", "M": "Male"})
     return deaths
 
 
@@ -199,7 +200,7 @@ def update_dropdown(children):
         Input('ticker-text', "children")
     ]
 )
-# @cache.memoize()
+@cache.memoize()
 def update_figure(cities, _):
     figures = []
     now = datetime.now().isoformat()
@@ -216,24 +217,20 @@ def update_figure(cities, _):
         figures.append(dcc.Graph(id="deaths", figure=fig, className="plot"))
         # 100s, 20s etc sort by numeric value
         age_labels = sorted(cases_df.age.unique(), key=lambda x: int(x.replace("s", "")))
-        fig = histogram(cases_df, "age",
-                        layout_overrides={
-                            "title": "<b>COVID-19 Cases by Age Range</b>",
-                            "xaxis": {"categoryarray": age_labels, "categoryorder": "array"}}
-                        )
+        fig = histogram(cases_df, "age", layout_overrides={
+            "title": "<b>COVID-19 Cases by Age Range</b>",
+            "xaxis": {"categoryarray": age_labels, "categoryorder": "array"}})
         figures.append(dcc.Graph(id="age", figure=fig, className="plot"))
-        fig = histogram(deaths_df, "age",
-                        layout_overrides={
-                            "title": "<b>COVID-19 Deaths by Age Range</b>",
-                            "xaxis": {"categoryarray": age_labels, "categoryorder": "array"}}
-                        )
+        fig = histogram(deaths_df, "age", layout_overrides={
+            "title": "<b>COVID-19 Deaths by Age Range</b>",
+            "xaxis": {"categoryarray": age_labels, "categoryorder": "array"}})
         figures.append(dcc.Graph(id="deaths_age", figure=fig, className="plot"))
-        fig = histogram(cases_df, "sex",
-                        layout_overrides={"title": "<b>COVID-19 Cases by Sex</b>"})
+        fig = histogram(cases_df, "sex", layout_overrides={"title": "<b>COVID-19 Cases by Sex</b>"})
         figures.append(dcc.Graph(id="sex", figure=fig, className="plot"))
-        fig = histogram(deaths_df, "sex",
-                        layout_overrides={"title": "<b>COVID-19 Deaths by Sex</b>"}
-                        )
+        fig = histogram(deaths_df, "sex", layout_overrides={
+            "title": "<b>COVID-19 Deaths by Sex</b>",
+            "xaxis": {"categoryarray": ["Female", "Male"], "categoryorder": "array"},
+        })
         figures.append(dcc.Graph(id="deaths_sex", figure=fig, className="plot"))
         return figures
 
@@ -243,23 +240,20 @@ def update_figure(cities, _):
     fig = by_day_by_city_scatter(dff)
     figures.append(dcc.Graph(id="by_day_cumulative", figure=fig, className="plot"))
     age_labels = sorted(cases_df.age.unique(), key=lambda x: int(x.replace("s", "")))
-    fig = histogram_by_city(cases_df, "age", cities,
-                            layout_overrides={
-                                "title": "<b>COVID-19 Cases by Age Range</b>",
-                                "xaxis": {"categoryarray": age_labels, "categoryorder": "array"}}
-                            )
+    fig = histogram_by_city(cases_df, "age", cities, layout_overrides={
+        "title": "<b>COVID-19 Cases by Age Range</b>",
+        "xaxis": {"categoryarray": age_labels, "categoryorder": "array"}})
     figures.append(dcc.Graph(id="deaths_age", figure=fig, className="plot"))
-    fig = histogram_by_city(deaths_df, "age", cities,
-                            layout_overrides={
-                                "title": "<b>COVID-19 Deaths by Age Range</b>",
-                                "xaxis": {"categoryarray": age_labels, "categoryorder": "array"}}
-                            )
+    fig = histogram_by_city(deaths_df, "age", cities, layout_overrides={
+        "title": "<b>COVID-19 Deaths by Age Range</b>",
+        "xaxis": {"categoryarray": age_labels, "categoryorder": "array"}})
     figures.append(dcc.Graph(id="age", figure=fig, className="plot"))
-    fig = histogram_by_city(cases_df, "sex", cities,
-                            layout_overrides={"title": "<b>COVID-19 Cases by Sex</b>"})
+    fig = histogram_by_city(cases_df, "sex", cities, layout_overrides={"title": "<b>COVID-19 Cases by Sex</b>"})
     figures.append(dcc.Graph(id="deaths_sex", figure=fig, className="plot"))
-    fig = histogram_by_city(deaths_df, "sex", cities,
-                            layout_overrides={"title": "<b>COVID-19 Deaths by Sex</b>"})
+    fig = histogram_by_city(deaths_df, "sex", cities, layout_overrides={
+        "title": "<b>COVID-19 Deaths by Sex</b>",
+        "xaxis": {"categoryarray": ["Female", "Male"], "categoryorder": "array"},
+    })
     figures.append(dcc.Graph(id="sex", figure=fig, className="plot"))
     return figures
 
@@ -389,7 +383,7 @@ def cumulative_by_day_scatter(df, layout_overrides=None):
     return fig
 
 
-def histogram_by_city(df, column, cities, layout_overrides=None, sort_by_total=False):
+def histogram_by_city(df, column, cities, layout_overrides=None):
     x = (df.groupby(["city", column])[column]
          .count()
          .unstack(fill_value=0)
@@ -397,9 +391,21 @@ def histogram_by_city(df, column, cities, layout_overrides=None, sort_by_total=F
          .sort_index(level=0)
          .reset_index(name="counts")
          )
+
     bars = []
+    categories = None
+    try:
+        categories = layout_overrides["xaxis"]["categoryarray"]
+    except:
+        pass
     for city in cities:
         bar = x[x.city == city]
+        if categories is not None:
+            cats = pd.DataFrame(categories, columns=[column])
+            cats["counts"] = 0
+            cats["city"] = city
+            missing_cats = cats[~cats[column].isin(bar[column])]
+            bar = pd.concat([missing_cats, bar])
         bars.append(go.Bar(name=city, x=bar[column], y=bar.counts))
 
     fig = go.Figure(data=bars)
@@ -409,22 +415,28 @@ def histogram_by_city(df, column, cities, layout_overrides=None, sort_by_total=F
     layout = copy.deepcopy(DEFAULT_LAYOUT)
     if layout_overrides:
         layout.update(layout_overrides)
-    if sort_by_total:
-        fig.update_xaxes(categoryorder="total descending")
     fig.update_layout(layout)
     return fig
 
 
-def histogram(df, column, layout_overrides=None, sort_by_total=False):
+def histogram(df, column, layout_overrides=None):
     x = (df.groupby([column])[column]
          .count()
          .reset_index(name="counts")
          .sort_index(level=0))
+    categories = None
+    try:
+        categories = layout_overrides["xaxis"]["categoryarray"]
+    except:
+        pass
+    if categories is not None:
+        cats = pd.DataFrame(categories, columns=[column])
+        cats["counts"] = 0
+        missing_cats = cats[~cats[column].isin(x[column])]
+        x = pd.concat([missing_cats, x])
     fig = go.Figure(data=go.Bar(x=x[column], y=x.counts))
     layout = copy.deepcopy(DEFAULT_LAYOUT)
     fig.update_xaxes(categoryorder="category ascending")
-    if sort_by_total:
-        fig.update_xaxes(categoryorder="total descending")
     if layout_overrides:
         layout.update(layout_overrides)
     fig.update_layout(layout)
