@@ -10,6 +10,7 @@ import plotly.express as px
 import plotly.graph_objs as go
 import requests
 from bs4 import BeautifulSoup
+import bs4
 from dash.dependencies import Input, Output
 from flask import send_file
 from flask_caching import Cache
@@ -306,11 +307,10 @@ def by_day_by_city_scatter(df, layout_overrides=None):
         'D', fill_value=0
     ).stack().sort_index(level=1).reset_index()
     x = x.sort_values(['city', 'reported_date'])
-    fig = px.scatter(x, x="reported_date", y="counts", color="city")
+    fig = px.scatter(x, x="reported_date", y="counts", color="city", trendline="lowess")
     layout = copy.deepcopy(DEFAULT_LAYOUT)
     fig.update_layout(title_text="<b>Daily COVID-19 Cases</b>")
     fig.update_layout(showlegend=True, legend_title=None, legend_orientation="h")
-    fig.update_traces(mode='lines+markers')
     if layout_overrides:
         layout.update(layout_overrides)
     fig.update_layout(layout)
@@ -346,17 +346,7 @@ def by_day_scatter(df, layout_overrides=None):
     by_day.index = pd.to_datetime(by_day.index)
     by_day = by_day.resample("D").sum().fillna(0)
     by_day = by_day.sort_index()
-
-    fig = go.Figure({
-        "data": [
-            {
-                "type": "scatter",
-                "x": by_day.index,
-                "y": by_day,
-                "mode": "lines+markers"
-            }
-        ],
-    })
+    fig = px.scatter(x=by_day.index, y=by_day, trendline="lowess")
     layout = copy.deepcopy(DEFAULT_LAYOUT)
     fig.update_layout(title_text="<b>Daily COVID-19 Cases</b>")
     if layout_overrides:
