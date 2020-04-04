@@ -173,10 +173,19 @@ def create_cases_df(cases):
 def parse_table(html_table):
     data = []
     rows = html_table.find_all('tr')
-    for row in rows:
-        cols = row.find_all('td')
-        cols = [ele.text.strip() for ele in cols]
-        data.append(cols)
+    for i, row in enumerate(rows):
+        cells = row.find_all('td')
+        parsed_row = []
+        for j, cell in enumerate(cells):
+            # some malformed tags with inline styles
+            # exclude these.
+            has_style = cell.find('style')
+            # TODO maybe change to below to exclude all non-string tags
+            # "".join([x.strip() for x in cell if isinstance(x, bs4.element.NavigableString)])
+            if has_style:
+                cell.style.extract()
+            parsed_row.append(cell.get_text(strip=True))
+        data.append(parsed_row)
     return data
 
 
