@@ -21,6 +21,20 @@ app.index_string = """<!DOCTYPE html>
     <head>
         <meta name="Description" content="Summary of Larimer County COVID-19 Cases">
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        <script type="application/ld+json">
+        {
+          "@context": "http://schema.org",
+          "@type": "WebApplication",
+          "name": "Larimer County COVID-19",
+          "url": "https://www.larimer-county-c19.com/",
+          "description": "Application summarizing the Larimer County Colorado COVID-19 case data",
+          "applicationCategory": "Health, Visualization",
+          "keywords": "Larimer County, COVID-19, Coronavirus",
+          "browserRequirements": "Requires JavaScript",
+          "softwareVersion": "1.0.0",
+          "operatingSystem": "All"
+        }
+        </script>
         <!-- Global site tag (gtag.js) - Google Analytics -->
         <script async src="https://www.googletagmanager.com/gtag/js?id=G-XR42PS5B9B"></script>
         <script>
