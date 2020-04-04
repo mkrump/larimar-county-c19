@@ -19,7 +19,7 @@ app = dash.Dash(__name__)
 app.index_string = """<!DOCTYPE html>
 <html>
     <head>
-        <meta name="Description" content="Summary of Larimer County COVID-19 Cases">
+        <meta name="Description" content="A dashboard tracking COVID-19 cases in Larimer County, Colorado">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <script type="application/ld+json">
         {
@@ -27,7 +27,7 @@ app.index_string = """<!DOCTYPE html>
           "@type": "WebApplication",
           "name": "Larimer County COVID-19",
           "url": "https://www.larimer-county-c19.com/",
-          "description": "Application summarizing the Larimer County Colorado COVID-19 case data",
+          "description": "A dashboard tracking COVID-19 cases in Larimer County, Colorado",
           "applicationCategory": "Health, Visualization",
           "keywords": "Larimer County, COVID-19, Coronavirus",
           "browserRequirements": "Requires JavaScript",
