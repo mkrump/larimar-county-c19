@@ -126,14 +126,22 @@ app.layout = html.Div(
 
 @cache.cached()
 def update_metrics():
+    # cases
     r = requests.get(
-        "https://www.larimer.org/health/communicable-disease/coronavirus-covid-19/larimer-county-positive-covid-19-numbers"
+        "https://www.larimer.org/health/communicable-disease/coronavirus-covid-19/larimer-county-positive-covid-19-numbers/covid-19"
     )
     soup = BeautifulSoup(r.content, 'html.parser')
     tables = soup.find_all('table')
     cases = parse_table(tables[0])
     cases_df = create_cases_df(cases)
-    deaths = parse_table(tables[1])
+
+    # deaths
+    r = requests.get(
+        "https://www.larimer.org/health/communicable-disease/coronavirus-covid-19/larimer-county-positive-covid-19-numbers"
+    )
+    soup = BeautifulSoup(r.content, 'html.parser')
+    tables = soup.find_all('table')
+    deaths = parse_table(tables[-1])
     deaths_df = create_deaths_df(deaths=deaths)
     now = datetime.now().isoformat()
     logging.info("update_metrics {0}".format(now))
