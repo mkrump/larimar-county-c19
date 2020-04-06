@@ -1,5 +1,7 @@
 import copy
+import io
 import logging
+import re
 from datetime import datetime
 
 import dash
@@ -9,8 +11,6 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objs as go
 import requests
-from bs4 import BeautifulSoup
-import bs4
 from dash.dependencies import Input, Output
 from flask import send_file
 from flask_caching import Cache
@@ -128,21 +128,15 @@ app.layout = html.Div(
 def update_metrics():
     # cases
     r = requests.get(
-        "https://www.larimer.org/health/communicable-disease/coronavirus-covid-19/larimer-county-positive-covid-19-numbers/covid-19"
+        "https://docs.google.com/spreadsheets/d/e/2PACX-1vQLNokCu-CD-7XMSqhV1-t4H0cYzOcszJIf8KCyr3yP82jZ2TD53iWaFb7r_7dtAELfTt8ndM-dQvgj/pub?output=csv"
     )
-    soup = BeautifulSoup(r.content, 'html.parser')
-    tables = soup.find_all('table')
-    cases = parse_table(tables[0])
-    cases_df = create_cases_df(cases)
+    cases_df = create_cases_df(r.content)
 
     # deaths
     r = requests.get(
-        "https://www.larimer.org/health/communicable-disease/coronavirus-covid-19/larimer-county-positive-covid-19-numbers"
+        "https://docs.google.com/spreadsheets/d/e/2PACX-1vQLNokCu-CD-7XMSqhV1-t4H0cYzOcszJIf8KCyr3yP82jZ2TD53iWaFb7r_7dtAELfTt8ndM-dQvgj/pub?output=csv&gid=71138259"
     )
-    soup = BeautifulSoup(r.content, 'html.parser')
-    tables = soup.find_all('table')
-    deaths = parse_table(tables[-1])
-    deaths_df = create_deaths_df(deaths=deaths)
+    deaths_df = create_deaths_df(r.content)
     now = datetime.now().isoformat()
     logging.info("update_metrics {0}".format(now))
     return deaths_df, cases_df, datetime.now().isoformat()
@@ -158,18 +152,28 @@ def fix_bad_dates(d):
 
 
 def create_deaths_df(deaths):
-    columns = [c.lower().replace(" ", '_') for c in deaths[0]]
-    cases_df = pd.DataFrame(deaths[1:], columns=columns)
-    deaths = cases_df.dropna(axis=0, how='all')
-    deaths.city = cases_df.city.str.title()
+    bs = io.BytesIO(deaths)
+    deaths_df = pd.read_csv(bs, encoding="utf-8")
+    columns = [format_column(x) for x in deaths_df.columns]
+    deaths_df.columns = columns
+    deaths = deaths_df.dropna(axis=0, how='all')
+    deaths.city = deaths_df.city.str.title()
     deaths.age = deaths.age.apply(lambda x: str(int(x) - (int(x) % 10)) + "s")
     deaths.sex = deaths.sex.replace({"F": "Female", "M": "Male"})
     return deaths
 
 
+def format_column(col):
+    f_col = re.findall('[A-Z][a-z]*', col)
+    f_col = [x.lower() for x in f_col]
+    return "_".join(f_col)
+
+
 def create_cases_df(cases):
-    columns = [c.lower().replace(" ", '_') for c in cases[0]]
-    cases_df = pd.DataFrame(cases[1:], columns=columns)
+    bs = io.BytesIO(cases)
+    cases_df = pd.read_csv(bs, encoding="utf-8")
+    columns = [format_column(x) for x in cases_df.columns]
+    cases_df.columns = columns
     cases_df = cases_df.dropna(axis=0, how='all')
     cases_df.city = cases_df.city.str.title()
     cases_df.sex = cases_df.sex.str.title()
@@ -338,8 +342,12 @@ def by_day_by_city_scatter(df, layout_overrides=None):
         'D', fill_value=0
     ).stack().sort_index(level=1).reset_index()
     x = x.sort_values(['city', 'reported_date'])
-    fig = px.scatter(x, x="reported_date", y="counts", color="city", trendline="lowess")
+    fig = px.bar(x, x="reported_date", y="counts", color="city", barmode='group')
     layout = copy.deepcopy(DEFAULT_LAYOUT)
+    # No trendlines for now
+    # fig2 = px.scatter(x, x="reported_date", y="counts", color="city", trendline="lowess")
+    # trendlines = fig2.data[1::2]
+    # _ = [fig.add_trace(t) for t in trendlines]
     fig.update_layout(title_text="<b>Daily COVID-19 Cases</b>")
     fig.update_layout(showlegend=True, legend_title=None, legend_orientation="h")
     if layout_overrides:
@@ -377,8 +385,12 @@ def by_day_scatter(df, layout_overrides=None):
     by_day.index = pd.to_datetime(by_day.index)
     by_day = by_day.resample("D").sum().fillna(0)
     by_day = by_day.sort_index()
-    fig = px.scatter(x=by_day.index, y=by_day, trendline="lowess")
+    fig = px.bar(x=by_day.index, y=by_day)
     layout = copy.deepcopy(DEFAULT_LAYOUT)
+    # No trendlines for now
+    # fig2 = px.scatter(x=by_day.index, y=by_day, trendline="lowess", color_discrete_sequence=["red"])
+    # trendline = fig2.data[1]
+    # fig.add_trace(trendline)
     fig.update_layout(title_text="<b>Daily COVID-19 Cases</b>")
     if layout_overrides:
         layout.update(layout_overrides)

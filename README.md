@@ -17,25 +17,21 @@ docker-compose up
 ```
 
 ### Deploy
-* Build container 
+* Test build
     ```
-    docker-compose -f docker-compose.yml -f docker-compose.prod.yml build
+    docker-compose -f docker-compose.yml -f docker-compose.prod.yml up --build
     ```
 
-* Push new container to ECR
+* Deploy to ECS
     ```
     aws ecr get-login-password \
             --region us-west-2 | docker login \
             --username AWS \
             --password-stdin covid19
 
-    docker tag covid19/dashboard <ECR-REPO>/covid19
-    docker push <ECR-REPO>/covid19
+    ./build $ECR
+    ./deploy $CLUSTER $SERVICE
     ```
-
-* Update the task definition on ECS to use new container
-* Update the service to use new task definition
-
 
 ### Demo
 [Larimer County COVID-19 dashboard](https://www.larimer-county-c19.com/) 
