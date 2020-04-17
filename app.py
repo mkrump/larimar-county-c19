@@ -128,7 +128,7 @@ app.layout = html.Div(
 def update_metrics():
     # cases
     r = requests.get(
-        "https://docs.google.com/spreadsheets/d/e/2PACX-1vQLNokCu-CD-7XMSqhV1-t4H0cYzOcszJIf8KCyr3yP82jZ2TD53iWaFb7r_7dtAELfTt8ndM-dQvgj/pub?output=csv"
+        "https://docs.google.com/spreadsheets/d/e/2PACX-1vQLNokCu-CD-7XMSqhV1-t4H0cYzOcszJIf8KCyr3yP82jZ2TD53iWaFb7r_7dtAELfTt8ndM-dQvgj/pub?output=csv&gid=1219297132"
     )
     cases_df = create_cases_df(r.content)
 
@@ -156,11 +156,11 @@ def create_deaths_df(deaths):
     deaths_df = pd.read_csv(bs, encoding="utf-8")
     columns = [format_column(x) for x in deaths_df.columns]
     deaths_df.columns = columns
-    deaths = deaths_df.dropna(axis=0, how='all')
-    deaths.city = deaths_df.city.str.title()
-    deaths.age = deaths.age.apply(lambda x: str(int(x) - (int(x) % 10)) + "s")
-    deaths.sex = deaths.sex.replace({"F": "Female", "M": "Male"})
-    return deaths
+    deaths_df = deaths_df.dropna(axis=0, thresh=2)
+    deaths_df.city = deaths_df.city.str.title()
+    deaths_df.age = deaths_df.age.apply(lambda x: str(int(x) - (int(x) % 10)) + "s")
+    deaths_df.sex = deaths_df.sex.replace({"F": "Female", "M": "Male"})
+    return deaths_df
 
 
 def format_column(col):
@@ -174,7 +174,8 @@ def create_cases_df(cases):
     cases_df = pd.read_csv(bs, encoding="utf-8")
     columns = [format_column(x) for x in cases_df.columns]
     cases_df.columns = columns
-    cases_df = cases_df.dropna(axis=0, how='all')
+    cases_df = cases_df.dropna(axis=0, thresh=2)
+    cases_df.age = cases_df.age.apply(lambda x: str(int(x) - (int(x) % 10)) + "s")
     cases_df.city = cases_df.city.str.title()
     cases_df.sex = cases_df.sex.str.title()
     cases_df.reported_date = cases_df.reported_date.apply(fix_bad_dates)
