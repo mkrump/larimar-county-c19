@@ -151,6 +151,13 @@ def fix_bad_dates(d):
     return d
 
 
+def create_age_buckets(x):
+    try:
+        return str(int(x) - (int(x) % 10)) + "s"
+    except ValueError:
+        return 'NA'
+
+
 def create_deaths_df(deaths):
     bs = io.BytesIO(deaths)
     deaths_df = pd.read_csv(bs, encoding="utf-8")
@@ -158,7 +165,7 @@ def create_deaths_df(deaths):
     deaths_df.columns = columns
     deaths_df = deaths_df.dropna(axis=0, thresh=2)
     deaths_df.city = deaths_df.city.str.title()
-    deaths_df.age = deaths_df.age.apply(lambda x: str(int(x) - (int(x) % 10)) + "s")
+    deaths_df.age = deaths_df.age.apply(create_age_buckets)
     deaths_df.sex = deaths_df.sex.replace({"F": "Female", "M": "Male"})
     return deaths_df
 
@@ -175,7 +182,7 @@ def create_cases_df(cases):
     columns = [format_column(x) for x in cases_df.columns]
     cases_df.columns = columns
     cases_df = cases_df.dropna(axis=0, thresh=2)
-    cases_df.age = cases_df.age.apply(lambda x: str(int(x) - (int(x) % 10)) + "s")
+    cases_df.age = cases_df.age.apply(create_age_buckets)
     cases_df.city = cases_df.city.str.title()
     cases_df.sex = cases_df.sex.str.title()
     cases_df.reported_date = cases_df.reported_date.apply(fix_bad_dates)
@@ -231,6 +238,12 @@ def update_dropdown(children):
     return sorted(values, key=lambda k: k['label'])
 
 
+def age_sort_key(a):
+    try:
+        return int(a.replace("s", ""))
+    except ValueError:
+        return -99
+
 @app.callback(
     Output('graph-container', "children"),
     [
@@ -254,7 +267,7 @@ def update_figure(cities, _):
         fig = top(deaths_df, layout_overrides={"title": "<b>COVID-19 Deaths by City</b>"})
         figures.append(dcc.Graph(id="deaths", figure=fig, className="plot"))
         # 100s, 20s etc sort by numeric value
-        age_labels = sorted(cases_df.age.unique(), key=lambda x: int(x.replace("s", "")))
+        age_labels = sorted(cases_df.age.unique(), key=age_sort_key)
         fig = histogram(cases_df, "age", layout_overrides={
             "title": "<b>COVID-19 Cases by Age Range</b>",
             "xaxis": {"categoryarray": age_labels, "categoryorder": "array"}})
@@ -277,7 +290,7 @@ def update_figure(cities, _):
     figures.append(dcc.Graph(id="by_day", figure=fig, className="plot"))
     fig = by_day_by_city_scatter(dff)
     figures.append(dcc.Graph(id="by_day_cumulative", figure=fig, className="plot"))
-    age_labels = sorted(cases_df.age.unique(), key=lambda x: int(x.replace("s", "")))
+    age_labels = sorted(cases_df.age.unique(),key=age_sort_key)
     fig = histogram_by_city(cases_df, "age", cities, layout_overrides={
         "title": "<b>COVID-19 Cases by Age Range</b>",
         "xaxis": {"categoryarray": age_labels, "categoryorder": "array"}})
