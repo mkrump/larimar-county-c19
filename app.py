@@ -77,6 +77,11 @@ cache.clear()
 
 MARKDOWN = '''
 #### 
+*When I first published this site, the county only provided a html table containing the raw data for each COVID case 
+and each COVID-related death. The county COVID site has since been updated and contains many useful visualizations along 
+with a generalized risk measure, so if you haven't visited it recently then definitely 
+checkout [Larimer County Health Department](https://www.larimer.org/health/communicable-disease/coronavirus-covid-19/larimer-county-positive-covid-19-numbers)*.
+
 This site summarizes the Larimer County COVID-19 case data found on the 
 [Larimer County Health Department website](https://www.larimer.org/health/communicable-disease/coronavirus-covid-19/larimer-county-positive-covid-19-numbers).
 
