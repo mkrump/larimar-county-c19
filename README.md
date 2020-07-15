@@ -27,10 +27,10 @@ docker-compose up
     aws ecr get-login-password \
             --region us-west-2 | docker login \
             --username AWS \
-            --password-stdin covid19
+            --password-stdin $ECR
 
-    ./build $ECR
-    ./deploy $CLUSTER $SERVICE
+    ./build.sh $ECR
+    ./deploy.sh $CLUSTER $SERVICE
     ```
 
 ### Demo
