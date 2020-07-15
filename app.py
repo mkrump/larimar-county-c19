@@ -249,6 +249,7 @@ def age_sort_key(a):
     except ValueError:
         return -99
 
+
 @app.callback(
     Output('graph-container', "children"),
     [
@@ -295,7 +296,7 @@ def update_figure(cities, _):
     figures.append(dcc.Graph(id="by_day", figure=fig, className="plot"))
     fig = by_day_by_city_scatter(dff)
     figures.append(dcc.Graph(id="by_day_cumulative", figure=fig, className="plot"))
-    age_labels = sorted(cases_df.age.unique(),key=age_sort_key)
+    age_labels = sorted(cases_df.age.unique(), key=age_sort_key)
     fig = histogram_by_city(cases_df, "age", cities, layout_overrides={
         "title": "<b>COVID-19 Cases by Age Range</b>",
         "xaxis": {"categoryarray": age_labels, "categoryorder": "array"}})
@@ -363,10 +364,13 @@ def by_day_by_city_scatter(df, layout_overrides=None):
     x = x.sort_values(['city', 'reported_date'])
     fig = px.bar(x, x="reported_date", y="counts", color="city", barmode='group')
     layout = copy.deepcopy(DEFAULT_LAYOUT)
-    # No trendlines for now
-    # fig2 = px.scatter(x, x="reported_date", y="counts", color="city", trendline="lowess")
-    # trendlines = fig2.data[1::2]
-    # _ = [fig.add_trace(t) for t in trendlines]
+    # add 7-day moving average by city
+    x['ma7'] = x.groupby('city')['counts'].transform(lambda x: x.rolling(7, 1).mean())
+    fig2 = px.line(x, x="reported_date", y="ma7", color="city", labels={"ma7": "7-day moving average"})
+    for f in fig2.data:
+        f["legendgroup"] = f["legendgroup"] + " 7-day moving average"
+        f["name"] = f["name"] + " 7-day moving average"
+    _ = [fig.add_trace(t) for t in fig2.data]
     fig.update_layout(title_text="<b>Daily COVID-19 Cases</b>")
     fig.update_layout(showlegend=True, legend_title=None, legend_orientation="h")
     if layout_overrides:
@@ -406,11 +410,11 @@ def by_day_scatter(df, layout_overrides=None):
     by_day = by_day.sort_index()
     fig = px.bar(x=by_day.index, y=by_day)
     layout = copy.deepcopy(DEFAULT_LAYOUT)
-    # No trendlines for now
-    # fig2 = px.scatter(x=by_day.index, y=by_day, trendline="lowess", color_discrete_sequence=["red"])
-    # trendline = fig2.data[1]
-    # fig.add_trace(trendline)
+    # add 7-day moving average
+    ma7 = by_day.rolling(7).mean()
+    fig.add_trace(go.Scatter(x=by_day.index, y=ma7, mode='lines', name='7 day moving average'))
     fig.update_layout(title_text="<b>Daily COVID-19 Cases</b>")
+    fig.update_layout(legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01))
     if layout_overrides:
         layout.update(layout_overrides)
     fig.update_layout(layout)
