@@ -354,7 +354,7 @@ def top(df, layout_overrides=None):
 def by_day_by_city_scatter(df, layout_overrides=None):
     x = df.groupby(["city", "reported_date"]).size().reset_index(name='counts')
     x.reported_date = pd.to_datetime(x.reported_date)
-    x.set_index(
+    x = x.set_index(
         ['reported_date', 'city']
     ).unstack(
         fill_value=0
@@ -365,7 +365,7 @@ def by_day_by_city_scatter(df, layout_overrides=None):
     fig = px.bar(x, x="reported_date", y="counts", color="city", barmode='group')
     layout = copy.deepcopy(DEFAULT_LAYOUT)
     # add 7-day moving average by city
-    x['ma7'] = x.groupby('city')['counts'].transform(lambda x: x.rolling(7, 1).mean())
+    x['ma7'] = x.groupby('city')['counts'].transform(lambda x: x.rolling(7).mean())
     fig2 = px.line(x, x="reported_date", y="ma7", color="city", labels={"ma7": "7-day moving average"})
     for f in fig2.data:
         f["legendgroup"] = f["legendgroup"] + " 7-day moving average"
@@ -382,7 +382,7 @@ def by_day_by_city_scatter(df, layout_overrides=None):
 def cumulative_by_city(df, layout_overrides=None):
     by_city_by_day = df.groupby(["city", "reported_date"]).size().reset_index(name='counts')
     by_city_by_day.reported_date = pd.to_datetime(by_city_by_day.reported_date)
-    by_city_by_day.set_index(
+    by_city_by_day = by_city_by_day.set_index(
         ['reported_date', 'city']
     ).unstack(
         fill_value=0
@@ -424,7 +424,7 @@ def by_day_scatter(df, layout_overrides=None):
 def cumulative_by_day_scatter(df, layout_overrides=None):
     by_day = df.groupby(["reported_date"]).size().reset_index(name='counts')
     by_day.reported_date = pd.to_datetime(by_day.reported_date)
-    by_day.set_index(
+    by_day = by_day.set_index(
         ['reported_date']
     ).asfreq(
         'D', fill_value=0
