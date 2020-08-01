@@ -2,6 +2,7 @@ import copy
 import io
 import logging
 import re
+import time
 from datetime import datetime
 
 import dash
@@ -77,10 +78,13 @@ cache.clear()
 
 MARKDOWN = '''
 #### 
+*This site is no longer actively being maintained, so please refer to the [Larimer County Health Department](https://www.larimer.org/health/communicable-disease/coronavirus-covid-19/larimer-county-positive-covid-19-numbers) site for all COVID related information.* 
+
 *When I first published this site, the county only provided a html table containing the raw data for each COVID case 
 and each COVID-related death. The county COVID site has since been updated and contains many useful visualizations along 
-with a generalized risk measure, so if you haven't visited it recently then definitely 
-checkout [Larimer County Health Department](https://www.larimer.org/health/communicable-disease/coronavirus-covid-19/larimer-county-positive-covid-19-numbers)*.
+with a generalized risk measure, so if you haven't visited it recently then definitely check it out.* 
+
+---
 
 This site summarizes the Larimer County COVID-19 case data found on the 
 [Larimer County Health Department website](https://www.larimer.org/health/communicable-disease/coronavirus-covid-19/larimer-county-positive-covid-19-numbers).
@@ -131,15 +135,16 @@ app.layout = html.Div(
 
 @cache.cached()
 def update_metrics():
+    ms = time.time_ns() // 1000000
     # cases
     r = requests.get(
-        "https://docs.google.com/spreadsheets/d/e/2PACX-1vQLNokCu-CD-7XMSqhV1-t4H0cYzOcszJIf8KCyr3yP82jZ2TD53iWaFb7r_7dtAELfTt8ndM-dQvgj/pub?output=csv&gid=1219297132"
+        f"https://apps.larimer.org/api/covid/?t={ms}&gid=1219297132&csv=cases"
     )
     cases_df = create_cases_df(r.content)
 
     # deaths
     r = requests.get(
-        "https://docs.google.com/spreadsheets/d/e/2PACX-1vQLNokCu-CD-7XMSqhV1-t4H0cYzOcszJIf8KCyr3yP82jZ2TD53iWaFb7r_7dtAELfTt8ndM-dQvgj/pub?output=csv&gid=71138259"
+        f"https://larimer-county-data-lake.s3-us-west-2.amazonaws.com/Public/covid/covid_deaths.csv?t={ms}"
     )
     deaths_df = create_deaths_df(r.content)
     now = datetime.now().isoformat()
@@ -166,12 +171,10 @@ def create_age_buckets(x):
 def create_deaths_df(deaths):
     bs = io.BytesIO(deaths)
     deaths_df = pd.read_csv(bs, encoding="utf-8")
-    columns = [format_column(x) for x in deaths_df.columns]
-    deaths_df.columns = columns
     deaths_df = deaths_df.dropna(axis=0, thresh=2)
     deaths_df.city = deaths_df.city.str.title()
     deaths_df.age = deaths_df.age.apply(create_age_buckets)
-    deaths_df.sex = deaths_df.sex.replace({"F": "Female", "M": "Male"})
+    deaths_df = deaths_df.rename(columns={"gender": "sex"})
     return deaths_df
 
 
