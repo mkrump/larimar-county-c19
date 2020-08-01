@@ -189,7 +189,8 @@ def create_cases_df(cases):
     cases_df = cases_df.dropna(axis=0, thresh=2)
     cases_df.age = cases_df.age.apply(create_age_buckets)
     cases_df.city = cases_df.city.str.title()
-    cases_df.sex = cases_df.sex.str.title()
+    cases_df.sex = cases_df.sex.str.title().str.strip()
+    cases_df.sex = cases_df.sex.replace({"Mal": "Male", "Male To Female": "Female"})
     cases_df.reported_date = cases_df.reported_date.apply(fix_bad_dates)
     cases_df.reported_date = pd.to_datetime(cases_df.reported_date)
     return cases_df
