@@ -156,9 +156,11 @@ def update_metrics():
 # try to fix these if possible
 def fix_bad_dates(d):
     date_parts = d.split("/")
+    # sometimes multiple /'s so strip these out
+    date_parts = [d for d in date_parts if d != ""]
     if len(date_parts) == 2:
         return f"{date_parts[0]}/{date_parts[1]}/2020"
-    return d
+    return f"{date_parts[0]}/{date_parts[1]}/{date_parts[2]}"
 
 
 def create_age_buckets(x):
