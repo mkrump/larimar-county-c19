@@ -138,7 +138,7 @@ def update_metrics():
     ms = time.time_ns() // 1000000
     # cases
     r = requests.get(
-        f"https://apps.larimer.org/api/covid/?t={ms}&gid=1219297132&csv=cases"
+        f"https://speedtest.larimer.org/covid/index.php?t={ms}&gid=1219297132&csv=cases"
     )
     cases_df = create_cases_df(r.content)
 
