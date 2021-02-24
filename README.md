@@ -33,6 +33,3 @@ docker-compose up
     ./deploy.sh $CLUSTER $SERVICE
     ```
 
-### Demo
-[Larimer County COVID-19 dashboard](https://www.larimer-county-c19.com/) 
-
